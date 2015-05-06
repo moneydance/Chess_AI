@@ -152,13 +152,13 @@ def _min_max(board, alpha, beta, depth=DEPTH-1):
             return beta
 
 
-def ai_min_max(board, competence):
+def ai_min_max(board, competence, average_diff):
     hsh = board.zobrist_hash()
     alpha, beta = -1000000, 1000000
     best_move = None
     for move in check_best_move(hsh, board.generate_legal_moves()):
         board.push(move)  # make move
-        score = _ai_min_max(board, alpha, beta, competence)
+        score = _ai_min_max(board, alpha, beta, competence, average_diff)
         board.pop()  # unmake move
         if score < beta:
             beta = score
@@ -166,19 +166,40 @@ def ai_min_max(board, competence):
     return best_move
 
 
-def score_ai_min_max(board, competence):
+def score_ai_min_max(board, competence, average_diff):
     hsh = board.zobrist_hash()
     alpha, beta = -1000000, 1000000
-    for move in check_best_move(hsh, board.generate_legal_moves()):
-        board.push(move)  # make move
-        score = _ai_min_max(board, alpha, beta, competence)
-        board.pop()  # unmake move
-        if score < beta:
-            beta = score
-    return beta
+    if board.turn == chess.WHITE:
+        best_alphas = []
+        for move in check_best_move(hsh, board.generate_legal_moves()):
+            board.push(move)  # make move
+            score = _ai_min_max(board, alpha, beta, competence, average_diff)
+            board.pop()  # unmake move
+            if score > alpha:
+                alpha = score
+                best_alphas.append(alpha)
+        if not best_alphas:
+            return alpha
+        else:
+            index = int(round((len(best_alphas)-1) * competence))
+            best_alpha = best_alphas[index]
+            # attempt at cutting out very bad moves that the player would
+            # obviously counter.
+            while abs(best_alpha - best_alphas[-1]) >= average_diff:
+                index += 1
+                best_alpha = best_alphas[index]
+            return best_alpha
+    else:
+        for move in check_best_move(hsh, board.generate_legal_moves()):
+            board.push(move)  # make move
+            score = _ai_min_max(board, alpha, beta, competence, average_diff)
+            board.pop()  # unmake move
+            if score < beta:
+                beta = score
+        return beta
 
 
-def _ai_min_max(board, alpha, beta, competence, depth=DEPTH-1):
+def _ai_min_max(board, alpha, beta, competence, average_diff, depth=DEPTH-1):
     hsh = board.zobrist_hash()
     score = search_hash(depth, alpha, beta, hsh)
     if score:
@@ -192,7 +213,8 @@ def _ai_min_max(board, alpha, beta, competence, depth=DEPTH-1):
             best_moves_and_alphas = []
             for move in check_best_move(hsh, board.generate_legal_moves()):
                 board.push(move)  # make move
-                score = _ai_min_max(board, alpha, beta, competence, depth-1)
+                score = _ai_min_max(board, alpha, beta,
+                                    competence, average_diff, depth-1)
                 board.pop()  # unmake move
                 if score > alpha:
                     alpha = score
@@ -205,11 +227,8 @@ def _ai_min_max(board, alpha, beta, competence, depth=DEPTH-1):
             index = int(round((len(best_moves_and_alphas)-1) * competence))
             best_move_and_alpha = best_moves_and_alphas[index]
             # attempt at cutting out very bad moves that the player would
-            # obviously counter 50 is arbitrary my thinking was the player
-            # would notice missing half a pawn their is probably a better way
-            # to do this so that the weight isn't constant and is based off of
-            # the players competence level.
-            while abs(best_move_and_alpha[1] - best_moves_and_alphas[-1][1]) >= 50:
+            # obviously counter.
+            while abs(best_move_and_alpha[1] - best_moves_and_alphas[-1][1]) >= average_diff:
                 index += 1
                 best_move_and_alpha = best_moves_and_alphas[index]
             input_hash(hsh, depth, best_move_and_alpha[1], alpha_flag,
@@ -220,7 +239,8 @@ def _ai_min_max(board, alpha, beta, competence, depth=DEPTH-1):
             best_move = None
             for move in check_best_move(hsh, board.generate_legal_moves()):
                 board.push(move)  # make move
-                score = _ai_min_max(board, alpha, beta, competence, depth-1)
+                score = _ai_min_max(board, alpha, beta, competence,
+                                    average_diff, depth-1)
                 board.pop()  # unmake move
                 if score < beta:
                     beta = score

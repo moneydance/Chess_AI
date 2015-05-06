@@ -6,7 +6,7 @@ import os
 from multiprocessing import Pool
 import sys
 import copy
-
+from math import ceil
 
 def calculate_competence(competence, diff):
     """
@@ -18,13 +18,13 @@ def calculate_competence(competence, diff):
     if 25 <= diff < 50:
         competence += .01
     elif 50 <= diff < 100:
-        competence -= competence * .005
-    elif 100 <= diff < 200:
         competence -= competence * .01
+    elif 100 <= diff < 200:
+        competence -= competence * .02
     elif 200 <= diff:
-        competence -= competence * .015
-    # don't let competence fall below .75 or 1
-    return min(max(competence, .75), 1)
+        competence -= competence * .04
+    # don't let competence fall below .8 or go above 1
+    return min(max(competence, .8), 1)
 
 
 def get_move(board):
@@ -44,9 +44,10 @@ def initialize(fd):
 
 
 def game():
-    players_competence = .75
+    players_competence = .8
     brd = chess.Board()
     move = None
+    difference_sum = 0
     print("Dynamic Chess AI plays the best move based of your estimated \n" +
           "skill. Will make optimal moves assuming you can't counter them if\n"
           + "your estimated skill level drops. Begins Checking skill after 2 "
@@ -83,6 +84,7 @@ def game():
                     diff = abs(best_move_score - move_score)
                     players_competence = calculate_competence(
                         players_competence, round(diff, -1))
+                    difference_sum += min(diff, 65)
                     print("difference between best play and player move: " +
                           str(diff))
                     print("Player's estimated competence: " +
@@ -109,23 +111,29 @@ def game():
                 start_time = time.time()
                 if __name__ == '__main__':
                     p = Pool(processes=2)
+                    average_difference = ceil(
+                        difference_sum/(brd.fullmove_number-1))
                     best_move_result = p.apply_async(
                         min_max, (brd,))
                     move_result = p.apply_async(
-                        ai_min_max, (brd, players_competence))
+                        ai_min_max, (brd, players_competence,
+                                     average_difference
+                                     ))
                     best_move = best_move_result.get(300)
                     move = move_result.get(300)
-                    #best_brd = copy.deepcopy(brd)
+                    best_brd = copy.deepcopy(brd)
                     brd.push(move)
-                    #best_brd.push(best_move)
-                    #best_move_score_result = p.apply_async(
-                    #    score_ai_min_max, (best_brd, players_competence))
-                    #move_score_result = p.apply_async(score_ai_min_max, (brd, players_competence))
-                    #best_move_score = (
-                    #    best_move_score_result.get(timeout=300))
-                    #move_score = (move_score_result.get(timeout=300))
-                    #print(best_move_score, move_score)
+                    best_brd.push(best_move)
+                    best_move_score_result = p.apply_async(
+                        score_ai_min_max, (best_brd, players_competence, average_difference))
+                    move_score_result = p.apply_async(score_ai_min_max, (brd, players_competence, average_difference))
+                    best_move_score = (
+                        best_move_score_result.get(timeout=300))
+                    move_score = (move_score_result.get(timeout=300))
                     print
+                    print(best_move_score, move_score)
+                    print("Whites Average Difference " + str(
+                        average_difference))
                     print("Black's best move: " + best_move.uci())
             print("Black's move: " + move.uci())
             print(
