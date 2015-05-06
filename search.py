@@ -202,9 +202,18 @@ def _ai_min_max(board, alpha, beta, competence, depth=DEPTH-1):
             if not best_moves_and_alphas:
                 input_hash(hsh, depth, alpha, alpha_flag, None)
                 return alpha
-            best_move_and_alpha = best_moves_and_alphas[
-                int(round((len(best_moves_and_alphas)-1) * competence))]
-            input_hash(hsh, depth, best_move_and_alpha[1], alpha_flag, best_move_and_alpha[0])
+            index = int(round((len(best_moves_and_alphas)-1) * competence))
+            best_move_and_alpha = best_moves_and_alphas[index]
+            # attempt at cutting out very bad moves that the player would
+            # obviously counter 50 is arbitrary my thinking was the player
+            # would notice missing half a pawn their is probably a better way
+            # to do this so that the weight isn't constant and is based off of
+            # the players competence level.
+            while abs(best_move_and_alpha[1] - best_moves_and_alphas[-1][1]) >= 50:
+                index += 1
+                best_move_and_alpha = best_moves_and_alphas[index]
+            input_hash(hsh, depth, best_move_and_alpha[1], alpha_flag,
+                       best_move_and_alpha[0])
             return best_move_and_alpha[1]
 
         else:

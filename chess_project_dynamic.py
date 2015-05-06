@@ -23,8 +23,8 @@ def calculate_competence(competence, diff):
         competence -= competence * .01
     elif 200 <= diff:
         competence -= competence * .015
-    # don't let competence fall below .85 or 1
-    return min(max(competence, .85), 1)
+    # don't let competence fall below .75 or 1
+    return min(max(competence, .75), 1)
 
 
 def get_move(board):
@@ -44,7 +44,7 @@ def initialize(fd):
 
 
 def game():
-    players_competence = 1.0
+    players_competence = .75
     brd = chess.Board()
     move = None
     print("Dynamic Chess AI plays the best move based of your estimated \n" +
