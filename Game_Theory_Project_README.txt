@@ -12,3 +12,5 @@ Currently the Code doesn't work brilliantly and most of the fault lies in the ai
 
 The second file to run is the chess_project file and this is just a normal chess AI that is coded in a traditional way.
 This works rather well and is very hard to beat I still havent!
+
+to insert a move use uci notation such as "a2a3"
