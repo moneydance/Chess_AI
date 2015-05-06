@@ -23,8 +23,8 @@ def calculate_competence(competence, diff):
         competence -= competence * .01
     elif 200 <= diff:
         competence -= competence * .015
-    # don't let competence fall below .7 or 1
-    return min(max(competence, .9), 1)
+    # don't let competence fall below .85 or 1
+    return min(max(competence, .85), 1)
 
 
 def get_move(board):
